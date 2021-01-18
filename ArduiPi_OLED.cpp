@@ -431,7 +431,17 @@ void ArduiPi_OLED::close(void)
   bcm2835_close();
 }
 
-  
+void ArduiPi_OLED::reset_offset()
+{
+  if (oled_type == OLED_SH1106_I2C_128x64 ||
+      oled_type == OLED_SH1106_SPI_128x64 ||
+      oled_type == OLED_ADAFRUIT_I2C_128x64 ||
+      oled_type == OLED_ADAFRUIT_SPI_128x64)
+    sendCommand(SSD1306_Set_Display_Offset, 0x00);        // no offset
+}
+
+
+
 void ArduiPi_OLED::begin( void ) 
 {
   uint8_t multiplex;

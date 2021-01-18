@@ -512,6 +512,8 @@ int start_idle_loop(ArduiPi_OLED &display, FILE *fifo_file,
     return 2;
   }
 
+  mpd_state last_state = disp_info.status.get_state();
+
   while (true) {
     fd_set set;
     FD_ZERO(&set);
@@ -547,6 +549,10 @@ int start_idle_loop(ArduiPi_OLED &display, FILE *fifo_file,
 
     // Update display if necessary
     if (timer.finished() || num_bars_read) {
+       if(last_state != disp_info.status.get_state()) {
+         display.reset_offset();
+	 last_state = disp_info.status.get_state();
+       }
        display.clearDisplay();
        pthread_mutex_lock(&disp_info_lock);
        display.invertDisplay(get_invert(opts.invert));
