@@ -1,5 +1,7 @@
 # Install instructions for RuneAudio
 
+*THESE INSTRUCTION FOR RUNEAUDIO HAVE NOT BEEN UPDATED AND ARE ARE NOT VALID*
+
 ## Base system
 
 Install [RuneAudio](http://www.runeaudio.com/). These instructions are

@@ -10,22 +10,45 @@ available for entering the commands below (e.g. use SSH, enable in the Moode UI
 at **Configure / System / Local Services / SSH term server**, log in with
 default username 'pi', default password 'moodeaudio').
 
+## Install all dependencies
+```
+sudo apt update
+sudo apt install autoconf make libtool libfftw3-dev libmpdclient-dev libi2c-dev i2c-tools lm-sensors
+```
+
 ## Build and install cava
 
 mpd_oled uses Cava, a bar spectrum audio visualizer, to calculate the spectrum
    
    <https://github.com/karlstav/cava>
 
-The commands to download, build and install Cava are as follows.
+If you have Cava installed (try running `cava -h`), there is no need
+to install Cava again, but to use the installled version you must use
+`mpd_oled -k ...`.
+
+Download, build and install Cava. These commands build a reduced
+feature-set executable called `mpd_oled_cava` (to avoid overwriting
+an existing Cava install)
 ```
-sudo apt-get update
-sudo apt-get install libfftw3-dev libasound2-dev
 git clone https://github.com/karlstav/cava
 cd cava
 ./autogen.sh
-./configure
+./configure --disable-input-portaudio --disable-input-sndio --disable-output-ncurses --disable-input-pulse --program-prefix=mpd_oled_
 make
-sudo make install
+sudo make install-strip
+```
+
+## Build and install mpd_oled
+
+Download, build and install mpd_oled.
+```
+cd ..   # if you are still in the cava source directory
+git clone https://github.com/antiprism/mpd_oled
+cd mpd_oled
+./bootstrap
+CPPFLAGS="-W -Wall -Wno-psabi" ./configure
+make
+sudo make install-strip
 ```
 
 ## System settings
@@ -51,6 +74,7 @@ refresh (I use 800000 with a 25 FPS screen refresh)
 ```
 sudo nano /boot/config.txt
 ```
+
 Restart the Pi after making any system configuration changes.
 
 ### SPI
@@ -60,20 +84,14 @@ In /boot/config.txt I have the line `dtparam=spi=on`.
 ```
 sudo nano /boot/config.txt
 ```
+
 Restart the Pi after making any system configuration changes.
 
+## Configure a copy of the playing audio
 
-## Build and install mpd_oled
+You may wish to [test the display](#test-the-display) before
+following the next instructions.
 
-Install the packages needed to build the program
-```
-sudo apt install libi2c-dev i2c-tools lm-sensors
-```
-Clone the source repository and change to the source directory
-```
-git clone https://github.com/antiprism/mpd_oled
-cd mpd_oled
-```
 *The next instructions configure MPD to make a*
 *copy of its output to a named pipe.*
 *This works reliably, but has two disadvantages: the configuration*
@@ -126,29 +144,28 @@ Patch Moode 6.4 and earlier (may work on Moode 5, later versions)
 ```
 sudo patch -d/ -p0 -N < moode_old_mpd_fifo.patch  # Patch Moode 6.4 and earlier
 ```
+If you ever want to make any changes to the FIFO configuration,
+then modify /usr/local/etc/mpd_oled_fifo.conf and restart MPD,
+by going to the Moode UI Audio Config page and clicking on
+"RESTART" in the MPD section (for Moode 5, restart MPD now).
 
 Now, enable the Moode metadata file
 ```
 sqlite3 /var/local/www/db/moode-sqlite3.db "update cfg_system set value=1 where param='extmeta'" && mpc add ""
 
 ```
-Go to the Moode UI and set your timezone at **Moode / Configure / System**,
-then (essential) **reboot the machine**.
+Go to the Moode UI and set your timezone at **Moode / Configure / System**.
 
-Log back into the machine and change to the mpd_oled source directory, e.g.
-```
-cd mpd_oled
-```
-If you ever want to make any changes to the FIFO configuration,
-then modify /usr/local/etc/mpd_oled_fifo.conf and restart MPD,
-by going to the Moode UI Audio Config page and clicking on
-"RESTART" in the MPD section (for Moode 5, restart MPD now).
+**Essential: reboot the machine**.
 
-Now build mpd_oled (for Moode 5, build with a plain `make`)
-```
-PLAYER=MOODE make
-```
-Check the program works correctly by running it while playing music.
+## Test the display
+
+Check the program works correctly by running a test command and checking
+the display while the player is stopped, paused and playing music.
+
+The program can be tested without the audio copy enabled, in which
+case the spectrum analyser are will be blank.
+
 The OLED type MUST be specified with -o from the following list:
     1 - Adafruit SPI 128x64,
     3 - Adafruit I2C 128x64,
@@ -160,16 +177,18 @@ E.g. the command for a generic I2C SH1106 display (OLED type 6) with
 a display of 10 bars and a gap of 1 pixel between bars and a framerate
 of 20Hz is
 ```
-sudo ./mpd_oled -o 6 -b 10 -g 1 -f 20
+sudo mpd_oled -o 6 -b 10 -g 1 -f 20
 ```
 The program can be stopped by pressing Control-C.
 
-For I2C OLEDs (mpd_oled -o 3, 4 or 6) you may need to specify the I2C address,
-find this by running,
-e.g. `sudo i2cdetect -y 1` and specify the address with mpd_oled -a,
-e.g. `./mpd_oled -o6 -a 3d ...`. If you have a reset pin connected, specify
-the GPIO number with mpd_oled -r, e.g. `mpd_oled -o6 -r 24 ...`. Specify
-the I2C bus number, if not 1, with mpd_oled -B, e.g. `mpd_oled -o6 -B 0 ...`
+For I2C OLEDs (mpd_oled -o 3, 4 or 6) you may need to specify
+the I2C address, find this by running,
+e.g. `sudo i2cdetect -y 1` and then specify the address with mpd_oled -a,
+e.g. `mpd_oled -o6 -a 3d ...`.
+If you have a reset pin connected, specify
+the GPIO number with mpd_oled -r, e.g. `mpd_oled -o6 -r 24 ...`.
+Specify the I2C bus number, if not 1,
+with mpd_oled -B, e.g. `mpd_oled -o6 -B 0 ...`
 
 For, SPI OLEDs (mpd_oled -o 1 or 7), you may need to specify your reset pin
 GPIO number (mpd_oled -r, default 25), DC pin GPIO number (mpd_oled -D,
@@ -182,22 +201,53 @@ is working and is synchronised with the music. If there are no bars then the
 audio copy may not have been configured correctly. If the bars seem jerky
 or not synchronized with the music then reduce the values of -b and/or -f.
 
-When you have found some suitable options then edit the file mpd_oled.service
-to include your OLED type number and other options as part of the mpd_oled
-command.
+## Install the mpd_oled service
+
+When you have chosen some suitable options, install and configure
+an mpd_oled service file so that mpd_oled will run at boot.
+
+Install a service file. This will not overwrite an existing mpd_oled
+service file.
 ```
-nano mpd_oled.service
+sudo mpd_oled_install.sh
 ```
 
-Then run
+Edit the service file to include your chosen options. Rerun
+this command any time to change the options. You *must* include a
+valid -o parameter for your OLED. If the command appears to hang,
+allow it some time to complete. If the included mpd_oled options are
+valid then mpd_oled will start running on the display when the
+command completes.
+
+Either, run the command with no options, which will open an editor, then
+add your options (from a successful mpd_oled test command) on the line
+starting `ExecStart` and after `mpd_oled`.
+
 ```
-sudo bash install.sh
+sudo mpd_oled_edit.sh     # edit mpd_oled options with editor
 ```
-This will copy the program to /usr/local/bin and add a systemd service
-to run it and start it running. You can start, stop, disable, etc the
-service with commands like
+
+Or, append all your options (from a successful mpd_oled test command)
+to the command and the service file will be updated to use these
+optiond for mpd_oled, e.g. the following will cause the service to
+run `mpd_oled -o 6 -b 10`
 ```
-sudo systemctl start mpd_oled
+sudo mpd_oled_edit.sh -o 6 -b 10
 ```
-If you wish to change mpd_oled parameters later then edit mpd_oled.service
-to include the changes and rerun install.sh.
+
+Commands from the following list can be run to control the service
+(they do not need to be run from the mpd_oled directory)
+```
+sudo systemctl enable mpd_oled    # start mpd_oled at boot
+sudo systemctl disable mpd_oled   # don't start mpd_oled at boot
+sudo systemctl start mpd_oled     # start mpd_oled now
+sudo systemctl stop mpd_oled      # stop mpd_oled now
+sudo systemctl status mpd_oled    # report the status of the service
+```
+
+If you wish to uninstall the mpd_oled service (just the service,
+the command does not uninstall the mpd_oled or cava binaries)
+```
+sudo mpd_oled_uninstall.sh
+```
+

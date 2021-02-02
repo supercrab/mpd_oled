@@ -6,26 +6,46 @@ Install [Volumio](https://volumio.org/). Ensure a command line prompt is
 available for entering the commands below (e.g.
 [use SSH](https://volumio.github.io/docs/User_Manual/SSH.html).)
 
+## Install all dependencies
+```
+sudo apt update
+sudo apt install build-essential git-core autoconf make libtool libfftw3-dev libmpdclient-dev libi2c-dev i2c-tools lm-sensors
+```
+
 ## Build and install cava
 
 mpd_oled uses Cava, a bar spectrum audio visualizer, to calculate the spectrum
    
    <https://github.com/karlstav/cava>
 
-The commands to download, build and install Cava are as follows. Note that
-the the command to install packages is different to the one given in the Cava
-instructions. It installs extra packages needed for the build and does not
-install the Pulseaudio development package.
+If you have Cava installed (try running `cava -h`), there is no need
+to install Cava again, but to use the installled version you must use
+`mpd_oled -k ...`.
+
+Download, build and install Cava. These commands build a reduced
+feature-set executable called `mpd_oled_cava`.
 ```
-sudo apt-get update
-sudo apt-get install git-core autoconf make libtool libfftw3-dev libasound2-dev
 git clone https://github.com/karlstav/cava
 cd cava
 ./autogen.sh
-./configure
+./configure --disable-input-portaudio --disable-input-sndio --disable-output-ncurses --disable-input-pulse --program-prefix=mpd_oled_
 make
-sudo make install
+sudo make install-strip
 ```
+
+## Build and install mpd_oled
+
+Download, build and install mpd_oled.
+```
+cd ..   # if you are still in the cava source directory
+git clone https://github.com/antiprism/mpd_oled
+cd mpd_oled
+./bootstrap
+CPPFLAGS="-W -Wall -Wno-psabi" ./configure
+make
+sudo make install-strip
+```
+
 
 ## System settings
 
@@ -47,6 +67,7 @@ refresh. Set a higher bus speed by adding the line
 ```
 sudo nano /boot/userconfig.txt
 ```
+
 Restart the Pi after making any system configuration changes.
 
 ### SPI
@@ -57,16 +78,32 @@ In /boot/userconfig.txt (or use /boot/config.txt for Volumio versions before
 ```
 sudo nano /boot/userconfig.txt
 ```
+
 Restart the Pi after making any system configuration changes.
 
-### Configure copy of audio
-The MPD audio output needs to be copied to a named pipe, where Cava can
+## Configure a copy of the playing audio
+
+You may wish to [test the display](#test-the-display) before
+following the next instructions.
+
+*The next instructions configure MPD to make a*
+*copy of its output to a named pipe.*
+*This works reliably, but has two disadvantages: the configuration*
+*involves changing a Volumio system file, which must be undone*
+*if Volumio is to be updated (see below); the spectrum*
+*only works when the audio is played through MPD, like music files,*
+*web radio and DLNA streaming. Creating a copy of the audio for all*
+*audio sources is harder, and may be unreliable -- see the thread on*
+*[using mpd_oled with Spotify and Airplay](https://github.com/antiprism/mpd_oled/issues/4)*
+
+MPD will be configured to copy its audio output to a named pipe, where Cava can
 read it and calculate the spectrum. This should be configured in /etc/mpd.conf,
 but changes to this file will be overwritten by Volumio. Instead, edit the
 mpd.conf template file
 ```
 sudo nano /volumio/app/plugins/music_service/mpd/mpd.conf.tmpl
 ```
+
 And add the following lines at the end
 ```
 audio_output {
@@ -76,9 +113,22 @@ audio_output {
         format          "44100:16:2"
 }
 ```
+
 After editing the file it is important to force Volumio to regenerate
 mpd.conf and restart MPD. To do this, open the Web UI and go to
 Settings > Playback Options then click on Save in the Audio Output section.
+
+**Note:** editing any file under /volumio will cause the next Volumio
+update to fail with a *system integrity check* error. You can restore
+just the volumio directory (this should not affect other configuration
+or settings, but could undo other system level customisations) with the
+command
+```
+volumio updater restorevolumio
+```
+
+This will reset the mpd.conf.tmpl file, so configure the audio copy again
+after the update.
 
 ### Set time zone
 If the mpd_oled clock does not display the local time then you may need
@@ -88,22 +138,14 @@ based application where you can specify your location
 sudo dpkg-reconfigure tzdata
 ```
 
-## Build and install mpd_oled
+## Test the display
 
-Install the packages needed to build the program
-```
-   sudo apt install build-essential git-core autoconf make libtool libi2c-dev i2c-tools lm-sensors libcurl4-openssl-dev libmpdclient-dev libjsoncpp-dev
-```
-Clone the source repository
-```
-git clone https://github.com/antiprism/mpd_oled
-```
-Change to the source directory and build the program
-```
-cd mpd_oled
-PLAYER=VOLUMIO make
-```
-Check the program works correctly by running it while playing music.
+Check the program works correctly by running a test command and checking
+the display while the player is stopped, paused and playing music.
+
+The program can be tested without the audio copy enabled, in which
+case the spectrum analyser are will be blank.
+
 The OLED type MUST be specified with -o from the following list:
     1 - Adafruit SPI 128x64,
     3 - Adafruit I2C 128x64,
@@ -115,16 +157,18 @@ E.g. the command for a generic I2C SH1106 display (OLED type 6) with
 a display of 10 bars and a gap of 1 pixel between bars and a framerate
 of 20Hz is
 ```
-sudo ./mpd_oled -o 6 -b 10 -g 1 -f 20
+sudo mpd_oled -o 6 -b 10 -g 1 -f 20
 ```
 The program can be stopped by pressing Control-C.
 
-For I2C OLEDs (mpd_oled -o 3, 4 or 6) you may need to specify the I2C address,
-find this by running,
-e.g. `sudo i2cdetect -y 1` and specify the address with mpd_oled -a,
-e.g. `./mpd_oled -o6 -a 3d ...`. If you have a reset pin connected, specify
-the GPIO number with mpd_oled -r, e.g. `mpd_oled -o6 -r 24 ...`. Specify
-the I2C bus number, if not 1, with mpd_oled -B, e.g. `mpd_oled -o6 -B 0 ...`
+For I2C OLEDs (mpd_oled -o 3, 4 or 6) you may need to specify
+the I2C address, find this by running,
+e.g. `sudo i2cdetect -y 1` and then specify the address with mpd_oled -a,
+e.g. `mpd_oled -o6 -a 3d ...`.
+If you have a reset pin connected, specify
+the GPIO number with mpd_oled -r, e.g. `mpd_oled -o6 -r 24 ...`.
+Specify the I2C bus number, if not 1,
+with mpd_oled -B, e.g. `mpd_oled -o6 -B 0 ...`
 
 For, SPI OLEDs (mpd_oled -o 1 or 7), you may need to specify your reset pin
 GPIO number (mpd_oled -r, default 25), DC pin GPIO number (mpd_oled -D,
@@ -137,24 +181,52 @@ is working and is synchronised with the music. If there are no bars then the
 audio copy may not have been configured correctly. If the bars seem jerky
 or not synchronized with the music then reduce the values of -b and/or -f.
 
-When you have found some suitable options then edit the file mpd_oled.service
-to include your OLED type number and other options as part of the mpd_oled
-command.
+## Install the mpd_oled service
+
+When you have chosen some suitable options, install and configure
+an mpd_oled service file so that mpd_oled will run at boot.
+
+Install a service file. This will not overwrite an existing mpd_oled
+service file.
 ```
-nano mpd_oled.service
+sudo mpd_oled_install.sh
 ```
 
-Then run
-```
-sudo bash install.sh
-```
-This will copy the program to /usr/local/bin and add a systemd service
-to run it and start it running. You can start, stop, disable, etc the
-service with commands like
-```
-sudo systemctl start mpd_oled
-```
-If you wish to change mpd_oled parameters later then edit mpd_oled.service
-to include the changes and rerun install.sh.
+Edit the service file to include your chosen options. Rerun
+this command any time to change the options. You *must* include a
+valid -o parameter for your OLED. If the command appears to hang,
+allow it some time to complete. If the included mpd_oled options are
+valid then mpd_oled will start running on the display when the
+command completes.
 
+Either, run the command with no options, which will open an editor, then
+add your options (from a successful mpd_oled test command) on the line
+starting `ExecStart` and after `mpd_oled`.
 
+```
+sudo mpd_oled_edit.sh     # edit mpd_oled options with editor
+```
+
+Or, append all your options (from a successful mpd_oled test command)
+to the command and the service file will be updated to use these
+optiond for mpd_oled, e.g. the following will cause the service to
+run `mpd_oled -o 6 -b 10'
+```
+sudo mpd_oled_edit.sh -o 6 -b 10
+```
+
+Commands from the following list can be run to control the service
+(they do not need to be run from the mpd_oled directory)
+```
+sudo systemctl enable mpd_oled    # start mpd_oled at boot
+sudo systemctl disable mpd_oled   # don't start mpd_oled at boot
+sudo systemctl start mpd_oled     # start mpd_oled now
+sudo systemctl stop mpd_oled      # stop mpd_oled now
+sudo systemctl status mpd_oled    # report the status of the service
+```
+
+If you wish to uninstall the mpd_oled service (just the service,
+the command does not uninstall the mpd_oled or cava binaries)
+```
+sudo mpd_oled_uninstall.sh
+```
