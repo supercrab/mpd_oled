@@ -4,7 +4,7 @@ SUBDIRS = src
 
 EXTRA_DIST = \
 	README.md NEWS AUTHORS FAQ.md COPYING \
-	INSTALL_MOODE.md INSTALL_RUNEAUDIO.md INSTALL_VOLUMIO.md \
+	INSTALL_MOODE.md INSTALL_RAUDIO.md INSTALL_VOLUMIO.md \
 	mpd_oled.jpg wiring_i2c.png wiring_spi.png \
 	\
 	moode6_mpd_fifo.patch moode7_mpd_fifo.patch moode_mpd_fifo_old.patch \
@@ -14,13 +14,14 @@ EXTRA_DIST = \
 
 docdir = @docdir@
 doc_DATA = README.md FAQ.md NEWS AUTHORS COPYING \
-	INSTALL_MOODE.md INSTALL_RUNEAUDIO.md INSTALL_VOLUMIO.md \
+	INSTALL_MOODE.md INSTALL_RAUDIO.md INSTALL_VOLUMIO.md \
         mpd_oled.jpg wiring_i2c.png wiring_spi.png
 
 filesdir = ${datarootdir}/${PACKAGE}
+files_DATA = mpd_oled_fifo.conf
 
-patchdir = ${filesdir}/patches
-patch_DATA = moode6_mpd_fifo.patch moode7_mpd_fifo.patch \
+moodedir = ${filesdir}/moode
+moode_DATA = moode6_mpd_fifo.patch moode7_mpd_fifo.patch \
 	moode_mpd_fifo_old.patch
 
 bin_SCRIPTS = mpd_oled_install.sh mpd_oled_edit.sh mpd_oled_uninstall.sh

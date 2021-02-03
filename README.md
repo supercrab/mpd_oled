@@ -2,7 +2,7 @@
 
 The mpd_oled program displays an information screen including a music
 frequency spectrum on an OLED screen connected to a Raspberry Pi (or similar)
-running MPD, this includes Moode, Volumio and RuneAudio.
+running MPD, this includes Moode, Volumio and rAudio (RuneAudio fork).
 The program supports I2C and SPI 128x64 OLED displays with an SSD1306,
 SSD1309, SH1106 or SSH1106 controller.
 ![OLED with mpd_oled](mpd_oled.jpg)
@@ -13,12 +13,12 @@ The instructions depend on the player
 
 * [Build and install on Volumio](INSTALL_VOLUMIO.md)
 * [Build and install on Moode](INSTALL_MOODE.md)
-* [Build and install on RuneAudio](INSTALL_RUNEAUDIO.md)
-* Build and install on Debian-based OS running MPD, follow the instructions
-  for [Build and install on Volumio](INSTALL_VOLUMIO.md) but use
-  `PLAYER=MPD make` (stretch) or `PLAYER=MPD LDLIBS="-li2c" make` (buster)
-  when building mpd_oled
+* [Build and install on rAudio](INSTALL_RAUDIO.md)
+* Build and install on Debian-based OS running MPD: follow the instructions
+  for [Build and install on Volumio](INSTALL_VOLUMIO.md) but configure
+  a copy of the audio by editing /etc/mpd.conf directly.
 
+Please check the [FAQ](FAQ.md)
 
 ## Credits
 

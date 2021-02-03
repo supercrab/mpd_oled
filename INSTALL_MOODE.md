@@ -11,6 +11,8 @@ at **Configure / System / Local Services / SSH term server**, log in with
 default username 'pi', default password 'moodeaudio').
 
 ## Install all dependencies
+
+Install all the packages needed to build and run cava and mpd_oled
 ```
 sudo apt update
 sudo apt install autoconf make libtool libfftw3-dev libmpdclient-dev libi2c-dev i2c-tools lm-sensors
@@ -27,8 +29,7 @@ to install Cava again, but to use the installled version you must use
 `mpd_oled -k ...`.
 
 Download, build and install Cava. These commands build a reduced
-feature-set executable called `mpd_oled_cava` (to avoid overwriting
-an existing Cava install)
+feature-set executable called `mpd_oled_cava`.
 ```
 git clone https://github.com/karlstav/cava
 cd cava

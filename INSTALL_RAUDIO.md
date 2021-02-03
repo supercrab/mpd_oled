@@ -1,17 +1,18 @@
-# Install instructions for Volumio
+# Install instructions for rAudio  (RuneAudio fork)
 
 ## Base system
 
-Install [Volumio](https://volumio.org/). Ensure a command line prompt is
-available for entering the commands below (e.g.
-[use SSH](https://volumio.github.io/docs/User_Manual/SSH.html).)
+Install [rAudio](https://github.com/rern/rAudio-1/).
+
+Ensure a command line prompt is available for entering the commands
+below (e.g. use SSH, default username 'root', default password 'ros').
 
 ## Install all dependencies
 
 Install all the packages needed to build and run cava and mpd_oled
 ```
-sudo apt update
-sudo apt install build-essential git-core autoconf make libtool libfftw3-dev libmpdclient-dev libi2c-dev i2c-tools lm-sensors
+pacman -Syy
+pacman -Sy git autoconf automake make libtool fftw alsa-lib glibc gcc i2c-tools
 ```
 
 ## Build and install cava
@@ -48,7 +49,6 @@ make
 sudo make install-strip
 ```
 
-
 ## System settings
 
 Configure your system to enable I2C or SPI, depending on how your OLED
@@ -57,31 +57,41 @@ is connected.
 ### I2C
 I use a cheap 4 pin I2C SSH1106 display with a Raspberry Pi Zero. It is
 [wired like this](wiring_i2c.png).
-In /etc/modules I have the line `i2c-dev` (included by default).
-In /boot/config.txt I have the line `dtparam=i2c_arm=on` (included by default).
+In /etc/modules-load.d/raspberrypi.conf I have the line `i2c-dev`.
+```
+nano /etc/modules-load.d/raspberrypi.conf
+```
 
+In /boot/config.txt I have the line `dtparam=i2c_arm=on`.
 The I2C bus speed on your system may be too slow for a reasonable screen
-refresh. Set a higher bus speed by adding the line
-`dtparam=i2c_arm_baudrate=400000` to
-/boot/userconfig.txt (or use /boot/config.txt for Volumio versions before
-2.673), or try a higher value for a higher screen refresh (I use 800000 with a
-25 FPS screen refresh)
+refresh. Set a higher bus speed by adding
+the following line `dtparam=i2c_arm_baudrate=400000` to
+/boot/config.txt, or try a higher value for a higher screen
+refresh (I use 800000 with a 25 FPS screen refresh)
 ```
-sudo nano /boot/userconfig.txt
+sudo nano /boot/config.txt
 ```
-
 Restart the Pi after making any system configuration changes.
 
 ### SPI
 I use a cheap 7 pin SPI SSH1106 display with a Raspberry Pi Zero. It is
 [wired like this](wiring_spi.png).
-In /boot/userconfig.txt (or use /boot/config.txt for Volumio versions before
-2.673) I have the line `dtparam=spi=on`.
+In /boot/config.txt I have the line `dtparam=spi=on`.
 ```
-sudo nano /boot/userconfig.txt
+sudo nano /boot/config.txt
 ```
-
 Restart the Pi after making any system configuration changes.
+
+### Set the time zone
+If, when running mpd_oled, the clock does not display the local time then
+you may need to set the system time zone. Either set it in the UI
+**Settings / System / Environment / Timezone**, or find your timezone in the
+list printed by the first command below, and edit the second command to
+include your timezone
+```
+timedatectl list-timezones
+timedatectl set-timezone Canada/Eastern
+```
 
 ## Configure a copy of the playing audio
 
@@ -90,55 +100,29 @@ following the next instructions.
 
 *The next instructions configure MPD to make a*
 *copy of its output to a named pipe.*
-*This works reliably, but has two disadvantages: the configuration*
-*involves changing a Volumio system file, which must be undone*
-*if Volumio is to be updated (see below); the spectrum*
+*This works reliably, but has the disadvantage that the spectrum*
 *only works when the audio is played through MPD, like music files,*
 *web radio and DLNA streaming. Creating a copy of the audio for all*
 *audio sources is harder, and may be unreliable -- see the thread on*
 *[using mpd_oled with Spotify and Airplay](https://github.com/antiprism/mpd_oled/issues/4)*
 
-MPD will be configured to copy its audio output to a named pipe, where Cava can
-read it and calculate the spectrum. This should be configured in /etc/mpd.conf,
-but changes to this file will be overwritten by Volumio. Instead, edit the
-mpd.conf template file
-```
-sudo nano /volumio/app/plugins/music_service/mpd/mpd.conf.tmpl
-```
+The MPD audio output will be copied to a named pipe, where Cava can
+read it and calculate the spectrum. This is configured in /etc/mpd.conf.
+This file cannot be edited directly, as it is managed by rAudio, but
+the UI will allow us to include some custom configuration in a
+separate file. First, copy the configuration file (the destination
+name is preserved from previous instructions)
 
-And add the following lines at the end
 ```
-audio_output {
-        type            "fifo"
-        name            "mpd_oled_FIFO"
-        path            "/tmp/mpd_oled_fifo"
-        format          "44100:16:2"
-}
+cp mpd_oled_fifo.conf /home/your-extra-mpd.conf
 ```
-
-After editing the file it is important to force Volumio to regenerate
-mpd.conf and restart MPD. To do this, open the Web UI and go to
-Settings > Playback Options then click on Save in the Audio Output section.
-
-**Note:** editing any file under /volumio will cause the next Volumio
-update to fail with a *system integrity check* error. You can restore
-just the volumio directory (this should not affect other configuration
-or settings, but could undo other system level customisations) with the
-command
+Now, in the UI go to **Settings / MPD / Options / User's custom settings**
+and click on the slider. A window will open with two boxes to enter
+custom settings. In the top box, add the line
 ```
-volumio updater restorevolumio
+include "/home/your-extra-mpd.conf"
 ```
-
-This will reset the mpd.conf.tmpl file, so configure the audio copy again
-after the update.
-
-### Set the time zone
-If the mpd_oled clock does not display the local time then you may need
-to set the system time zone. The following command will run a console
-based application where you can specify your location
-```
-sudo dpkg-reconfigure tzdata
-```
+Click on OK.
 
 ## Test the display
 
@@ -212,7 +196,7 @@ sudo mpd_oled_edit.sh     # edit mpd_oled options with editor
 Or, append all your options (from a successful mpd_oled test command)
 to the command and the service file will be updated to use these
 optiond for mpd_oled, e.g. the following will cause the service to
-run `mpd_oled -o 6 -b 10'
+run `mpd_oled -o 6 -b 10`
 ```
 sudo mpd_oled_edit.sh -o 6 -b 10
 ```
