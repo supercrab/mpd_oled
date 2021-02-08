@@ -24,7 +24,9 @@ moodedir = ${filesdir}/moode
 moode_DATA = moode6_mpd_fifo.patch moode7_mpd_fifo.patch \
 	moode_mpd_fifo_old.patch
 
-bin_SCRIPTS = mpd_oled_install.sh mpd_oled_edit.sh mpd_oled_uninstall.sh
+bin_SCRIPTS = mpd_oled_install.sh mpd_oled_edit.sh mpd_oled_uninstall.sh \
+	mpd_oled_volumio_mpd_conf_install.sh \
+	mpd_oled_volumio_mpd_conf_uninstall.sh
 
 CLEANFILES = $(bin_SCRIPTS)
 
