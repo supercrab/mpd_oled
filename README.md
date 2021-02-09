@@ -11,12 +11,13 @@ SSD1309, SH1106 or SSH1106 controller.
 
 The instructions depend on the player
 
-* [Build and install on Volumio](INSTALL_VOLUMIO.md)
-* [Build and install on Moode](INSTALL_MOODE.md)
-* [Build and install on rAudio](INSTALL_RAUDIO.md)
+* [Build and install on Volumio](doc/INSTALL_VOLUMIO.md)
+* [Build and install on Moode](doc/INSTALL_MOODE.md)
+* [Build and install on rAudio](doc/INSTALL_RAUDIO.md)
 * Build and install on Debian-based OS running MPD: follow the instructions
-  for [Build and install on Volumio](INSTALL_VOLUMIO.md) but configure
-  a copy of the audio by editing /etc/mpd.conf directly.
+  for [Build and install on Volumio](doc/INSTALL_VOLUMIO.md) but configure
+  a copy of the audio by editing /etc/mpd.conf directly and appending
+  the contents of `/usr/local/share/mp_oled/mpd_oled_fifo.conf`.
 
 Please check the [FAQ](FAQ.md)
 

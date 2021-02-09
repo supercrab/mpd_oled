@@ -85,11 +85,8 @@ Restart the Pi after making any system configuration changes.
 
 ## Configure a copy of the playing audio
 
-You may wish to [test the display](#test-the-display) before
-following the next instructions.
-
-*The next instructions configure MPD to make a*
-*copy of its output to a named pipe.*
+*The next instruction configure MPD to make a copy of its output to a*
+*named pipe, where Cava can read it and calculate the spectrum.*
 *This works reliably, but has two disadvantages: the configuration*
 *involves changing a Volumio system file, which must be undone*
 *if Volumio is to be updated (see below); the spectrum*
@@ -98,44 +95,20 @@ following the next instructions.
 *audio sources is harder, and may be unreliable -- see the thread on*
 *[using mpd_oled with Spotify and Airplay](https://github.com/antiprism/mpd_oled/issues/4)*
 
-MPD will be configured to copy its audio output to a named pipe, where Cava can
-read it and calculate the spectrum. This should be configured in /etc/mpd.conf,
-but changes to this file will be overwritten by Volumio. Instead, edit the
-mpd.conf template file
+Configure MPD to copy its audio output to a named pipe
 ```
-sudo nano /volumio/app/plugins/music_service/mpd/mpd.conf.tmpl
+sudo mpd_oled_volumio_mpd_conf_install.sh
 ```
 
-And add the following lines at the end
-```
-audio_output {
-        type            "fifo"
-        name            "mpd_oled_FIFO"
-        path            "/tmp/mpd_oled_fifo"
-        format          "44100:16:2"
-}
-```
-
-After editing the file it is important to force Volumio to regenerate
-mpd.conf and restart MPD. To do this, open the Web UI and go to
-Settings > Playback Options then click on Save in the Audio Output section.
-
-**Note:** editing any file under /volumio will cause the next Volumio
-update to fail with a *system integrity check* error. You can restore
-just the volumio directory (this should not affect other configuration
-or settings, but could undo other system level customisations) with the
-command
-```
-volumio updater restorevolumio
-```
-
-This will reset the mpd.conf.tmpl file, so configure the audio copy again
-after the update.
+**Note:** after running this command the next Volumio update will fail
+with a *system integrity check* error. The change can be undone by running
+`sudo mpd_oled_volumio_mpd_conf_uninstall.sh`, then after the Volumio update
+run `sudo mpd_oled_volumio_mpd_conf_install.sh` to re-enable the audio copy.
 
 ### Set the time zone
 If the mpd_oled clock does not display the local time then you may need
-to set the system time zone. The following command will run a console
-based application where you can specify your location
+to set the system time zone. Set this in the UI, or run the following
+command for a console based application where you can specify your location
 ```
 sudo dpkg-reconfigure tzdata
 ```
@@ -191,7 +164,7 @@ an mpd_oled service file so that mpd_oled will run at boot.
 Install a service file. This will not overwrite an existing mpd_oled
 service file.
 ```
-sudo mpd_oled_install.sh
+sudo mpd_oled_service_install.sh
 ```
 
 Edit the service file to include your chosen options. Rerun
@@ -206,7 +179,7 @@ add your options (from a successful mpd_oled test command) on the line
 starting `ExecStart` and after `mpd_oled`.
 
 ```
-sudo mpd_oled_edit.sh     # edit mpd_oled options with editor
+sudo mpd_oled_service_edit.sh     # edit mpd_oled options with editor
 ```
 
 Or, append all your options (from a successful mpd_oled test command)
@@ -214,7 +187,7 @@ to the command and the service file will be updated to use these
 optiond for mpd_oled, e.g. the following will cause the service to
 run `mpd_oled -o 6 -b 10'
 ```
-sudo mpd_oled_edit.sh -o 6 -b 10
+sudo mpd_oled_service_edit.sh -o 6 -b 10
 ```
 
 Commands from the following list can be run to control the service
@@ -228,7 +201,7 @@ sudo systemctl status mpd_oled    # report the status of the service
 ```
 
 If you wish to uninstall the mpd_oled service (just the service,
-the command does not uninstall the mpd_oled or cava binaries)
+the command does not uninstall the mpd_oled or mpd_oled_cava binaries)
 ```
-sudo mpd_oled_uninstall.sh
+sudo mpd_oled_service_uninstall.sh
 ```

@@ -96,9 +96,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/hjson_cpp/Makefile
                  src/http_tiny/Makefile
-                 mpd_oled_install.sh
-                 mpd_oled_edit.sh
-                 mpd_oled_uninstall.sh
+                 scripts/mpd_oled_service_install.sh
                  ])
 
 AC_OUTPUT

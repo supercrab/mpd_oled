@@ -1,18 +1,21 @@
-# Install instructions for rAudio  (RuneAudio fork)
+# Install instructions for Moode
+
+These instructions are compatible with Moode 7 and 6 (and Moode 5 later versions)
+using a 32-bit kernel architecture.
 
 ## Base system
 
-Install [rAudio](https://github.com/rern/rAudio-1/).
-
-Ensure a command line prompt is available for entering the commands
-below (e.g. use SSH, default username 'root', default password 'ros').
+Install [Moode](http://moodeaudio.org/). Ensure a command line prompt is
+available for entering the commands below (e.g. use SSH, enable in the Moode UI
+at **Configure / System / Local Services / SSH term server**, log in with
+default username 'pi', default password 'moodeaudio').
 
 ## Install all dependencies
 
 Install all the packages needed to build and run cava and mpd_oled
 ```
-pacman -Syy
-pacman -Sy git autoconf automake make libtool fftw alsa-lib glibc gcc i2c-tools
+sudo apt update
+sudo apt install autoconf make libtool libfftw3-dev libmpdclient-dev libi2c-dev i2c-tools lm-sensors
 ```
 
 ## Build and install cava
@@ -44,7 +47,7 @@ cd ..   # if you are still in the cava source directory
 git clone https://github.com/antiprism/mpd_oled
 cd mpd_oled
 ./bootstrap
-CPPFLAGS="-W -Wall -Wno-psabi" ./configure
+CPPFLAGS="-W -Wall -Wno-psabi" ./configure --prefix=/usr/local
 make
 sudo make install-strip
 ```
@@ -57,9 +60,10 @@ is connected.
 ### I2C
 I use a cheap 4 pin I2C SSH1106 display with a Raspberry Pi Zero. It is
 [wired like this](wiring_i2c.png).
-In /etc/modules-load.d/raspberrypi.conf I have the line `i2c-dev`.
+
+In /etc/modules I have the line `i2c-dev`
 ```
-nano /etc/modules-load.d/raspberrypi.conf
+sudo nano /etc/modules
 ```
 
 In /boot/config.txt I have the line `dtparam=i2c_arm=on`.
@@ -71,6 +75,7 @@ refresh (I use 800000 with a 25 FPS screen refresh)
 ```
 sudo nano /boot/config.txt
 ```
+
 Restart the Pi after making any system configuration changes.
 
 ### SPI
@@ -80,49 +85,79 @@ In /boot/config.txt I have the line `dtparam=spi=on`.
 ```
 sudo nano /boot/config.txt
 ```
-Restart the Pi after making any system configuration changes.
 
-### Set the time zone
-If, when running mpd_oled, the clock does not display the local time then
-you may need to set the system time zone. Either set it in the UI
-**Settings / System / Environment / Timezone**, or find your timezone in the
-list printed by the first command below, and edit the second command to
-include your timezone
-```
-timedatectl list-timezones
-timedatectl set-timezone Canada/Eastern
-```
+Restart the Pi after making any system configuration changes.
 
 ## Configure a copy of the playing audio
 
 You may wish to [test the display](#test-the-display) before
 following the next instructions.
 
-*The next instructions configure MPD to make a*
-*copy of its output to a named pipe.*
-*This works reliably, but has the disadvantage that the spectrum*
+*The next instruction configure MPD to make a copy of its output to a*
+*named pipe, where Cava can read it and calculate the spectrum.*
+*This works reliably, but has two disadvantages: the configuration*
+*involves patching Moode, which may inhibit Moode upgrades; the spectrum*
 *only works when the audio is played through MPD, like music files,*
 *web radio and DLNA streaming. Creating a copy of the audio for all*
 *audio sources is harder, and may be unreliable -- see the thread on*
 *[using mpd_oled with Spotify and Airplay](https://github.com/antiprism/mpd_oled/issues/4)*
 
-The MPD audio output will be copied to a named pipe, where Cava can
-read it and calculate the spectrum. This is configured in /etc/mpd.conf.
-This file cannot be edited directly, as it is managed by rAudio, but
-the UI will allow us to include some custom configuration in a
-separate file. First, copy the configuration file (the destination
-name is preserved from previous instructions)
+Configure MPD to copy its audio output to a named pipe. This is normally
+configured in /etc/mpd.conf, but Moode regenerates this file, and also
+disables all but a single MPD output, in response to various events. The
+following commands therefore change the Moode code to enable this audio copy.
+
+**Moode 6 only:** Moode 6 includes technical measures to disallow
+code changes; run the following commands to disable them
+```
+sqlite3 /var/local/www/db/moode-sqlite3.db "DROP TRIGGER ro_columns"
+sqlite3 /var/local/www/db/moode-sqlite3.db "UPDATE cfg_hash SET ACTION = 'warning' WHERE PARAM = '/var/www/command/worker.php'"
+sqlite3 /var/local/www/db/moode-sqlite3.db "UPDATE cfg_hash SET ACTION = 'warning' WHERE PARAM = '/var/www/inc/playerlib.php'"
+```
+
+Carrying on for Moode 6 and 7, copy the FIFO configuration file to
+/usr/local/etc/mpd_oled_fifo.conf
+```
+sudo cp /usr/local/share/mp_oled/mpd_oled_fifo.conf /usr/local/etc/
+```
+
+Patch the Moode source code. (Note 1:
+a Moode system update may overwrite the patched code, in which case, repeat
+the next instructions, and possibly also the previous instructions.
+Note 2: if, for any reason, regeneration of
+/etc/mpd.conf has been disabled (for example, if it has been set immutable)
+then edit the file directly and append the contents of mpd_oled_fifo.conf.)
+
+Run **just one** of the following three patch commands, depending on your
+Moode version.
+
+Patch Moode 7 (do not run this on Moode 6)
+```
+sudo patch -d/ -p0 -N < /usr/local/share/mpd_oled/moode/moode7_mpd_fifo.patch  # Patch Moode 7
+```
+
+Patch Moode 6.5 and later (do not run this on Moode 7)
+```
+sudo patch -d/ -p0 -N < /usr/local/share/mp_oled/moode6_mpd_fifo.patch  # Patch Moode 6.5 and later
+```
+
+Patch Moode 6.4 and earlier (may work on Moode 5, later versions)
+```
+sudo patch -d/ -p0 -N < /usr/local/share/mp_oled/moode_old_mpd_fifo.patch  # Patch Moode 6.4 and earlier
+```
+If you ever want to make any changes to the FIFO configuration,
+then modify /usr/local/etc/mpd_oled_fifo.conf and restart MPD,
+by going to the Moode UI Audio Config page and clicking on
+"RESTART" in the MPD section (for Moode 5, restart MPD now).
+
+Now, enable the Moode metadata file
+```
+sqlite3 /var/local/www/db/moode-sqlite3.db "update cfg_system set value=1 where param='extmeta'" && mpc add ""
 
 ```
-cp mpd_oled_fifo.conf /home/your-extra-mpd.conf
-```
-Now, in the UI go to **Settings / MPD / Options / User's custom settings**
-and click on the slider. A window will open with two boxes to enter
-custom settings. In the top box, add the line
-```
-include "/home/your-extra-mpd.conf"
-```
-Click on OK.
+Go to the Moode UI and set your timezone at **Moode / Configure / System**.
+
+**Essential: reboot the machine**.
 
 ## Test the display
 
@@ -175,7 +210,7 @@ an mpd_oled service file so that mpd_oled will run at boot.
 Install a service file. This will not overwrite an existing mpd_oled
 service file.
 ```
-sudo mpd_oled_install.sh
+sudo mpd_oled_service_install.sh
 ```
 
 Edit the service file to include your chosen options. Rerun
@@ -190,7 +225,7 @@ add your options (from a successful mpd_oled test command) on the line
 starting `ExecStart` and after `mpd_oled`.
 
 ```
-sudo mpd_oled_edit.sh     # edit mpd_oled options with editor
+sudo mpd_oled_service_edit.sh     # edit mpd_oled options with editor
 ```
 
 Or, append all your options (from a successful mpd_oled test command)
@@ -198,7 +233,7 @@ to the command and the service file will be updated to use these
 optiond for mpd_oled, e.g. the following will cause the service to
 run `mpd_oled -o 6 -b 10`
 ```
-sudo mpd_oled_edit.sh -o 6 -b 10
+sudo mpd_oled_service_edit.sh -o 6 -b 10
 ```
 
 Commands from the following list can be run to control the service
@@ -214,5 +249,6 @@ sudo systemctl status mpd_oled    # report the status of the service
 If you wish to uninstall the mpd_oled service (just the service,
 the command does not uninstall the mpd_oled or cava binaries)
 ```
-sudo mpd_oled_uninstall.sh
+sudo mpd_oled_service_uninstall.sh
 ```
+

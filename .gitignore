@@ -40,7 +40,4 @@ m4/lt~obsolete.m4
 *.swp
 
 src/mpd_oled
-
-mpd_oled_install.sh
-mpd_oled_edit.sh
-mpd_oled_uninstall.sh
+scripts/mpd_oled_service_install.sh
