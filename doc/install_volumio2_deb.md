@@ -83,7 +83,8 @@ Configure MPD to copy its audio output to a named pipe
 sudo mpd_oled_volumio_mpd_conf_install
 ```
 
-**Note:** after running this command the next Volumio update will fail
+**Note:** after running this command, the next time you try to update Volumio
+the update will fail
 with a *system integrity check* error. The change can be undone by running
 `sudo mpd_oled_volumio_mpd_conf_uninstall`, then after the Volumio update
 run `sudo mpd_oled_volumio_mpd_conf_install` to re-enable the audio copy.

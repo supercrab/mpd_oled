@@ -55,7 +55,7 @@ Restart the Pi after making any system configuration changes.
 
 This will download and install the most recent mpd_oled binary package
 ```
-wget http://pitastic.com/mpd_oled/packages/mpd_oled_moode_install_latest.sh
+wget -N http://pitastic.com/mpd_oled/packages/mpd_oled_moode_install_latest.sh
 sudo bash mpd_oled_moode_install_latest.sh
 ```
 
