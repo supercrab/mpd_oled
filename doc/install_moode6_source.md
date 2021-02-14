@@ -1,7 +1,11 @@
-# Install instructions for Moode
+# Install instructions for Moode 6 using source
 
-These instructions are compatible with Moode 7 and 6 (and Moode 5 later versions)
-using a 32-bit kernel architecture.
+These instructions are for installing mpd_oled using source on
+Moode 6 (with a 32-bit kernel architecture).
+
+A binary package is also available, but may not include the very
+latest code, see
+[Install instructions for Moode 6](install_moode6_deb.md).
 
 ## Base system
 
@@ -70,8 +74,8 @@ In /boot/config.txt I have the line `dtparam=i2c_arm=on`.
 The I2C bus speed on your system may be too slow for a reasonable screen
 refresh. Set a higher bus speed by adding
 the following line `dtparam=i2c_arm_baudrate=400000` to
-/boot/config.txt, or try a higher value for a higher screen
-refresh (I use 800000 with a 25 FPS screen refresh)
+/boot/config.txt, or try a higher value for a higher screen refresh
+(I use `dtparam=i2c_arm_baudrate=800000` with a 25 FPS screen refresh)
 ```
 sudo nano /boot/config.txt
 ```
@@ -88,55 +92,56 @@ sudo nano /boot/config.txt
 
 Restart the Pi after making any system configuration changes.
 
-## Configure a copy of the playing audio
+## Configure song status and time zone
+
+Enable the Moode metadata file, which includes information about the
+current song
+```
+sqlite3 /var/local/www/db/moode-sqlite3.db "update cfg_system set value=1 where param='extmeta'" && mpc add ""
+
+```
+Go to the Moode UI and set your timezone at **Moode / Configure / System**.
+
+
+## Configure a copy of the playing audio for the spectrum display
 
 You may wish to [test the display](#test-the-display) before
 following the next instructions.
 
-*The next instruction configure MPD to make a copy of its output to a*
+*The next instruction configures MPD to make a copy of its output to a*
 *named pipe, where Cava can read it and calculate the spectrum.*
 *This works reliably, but has two disadvantages: the configuration*
 *involves patching Moode, which may inhibit Moode upgrades; the spectrum*
-*only works when the audio is played through MPD, like music files,*
-*web radio and DLNA streaming. Creating a copy of the audio for all*
+*only works when the audio is played through MPD (like music files,*
+*web radio and DLNA streaming). Creating a copy of the audio for all*
 *audio sources is harder, and may be unreliable -- see the thread on*
 *[using mpd_oled with Spotify and Airplay](https://github.com/antiprism/mpd_oled/issues/4)*
 
 Configure MPD to copy its audio output to a named pipe. This is normally
 configured in /etc/mpd.conf, but Moode regenerates this file, and also
 disables all but a single MPD output, in response to various events. The
-following commands therefore change the Moode code to enable this audio copy.
+following commands therefore change the Moode code to persistently
+enable this audio copy.
 
-**Moode 6 only:** Moode 6 includes technical measures to disallow
-code changes; run the following commands to disable them
+Moode 6 includes technical measures to disallow code changes; run the
+following commands to disable them
 ```
 sqlite3 /var/local/www/db/moode-sqlite3.db "DROP TRIGGER ro_columns"
 sqlite3 /var/local/www/db/moode-sqlite3.db "UPDATE cfg_hash SET ACTION = 'warning' WHERE PARAM = '/var/www/command/worker.php'"
 sqlite3 /var/local/www/db/moode-sqlite3.db "UPDATE cfg_hash SET ACTION = 'warning' WHERE PARAM = '/var/www/inc/playerlib.php'"
 ```
 
-Carrying on for Moode 6 and 7, copy the FIFO configuration file to
-/usr/local/etc/mpd_oled_fifo.conf
+Copy the FIFO configuration file to /usr/local/etc/mpd_oled_fifo.conf
 ```
-sudo cp /usr/local/share/mp_oled/mpd_oled_fifo.conf /usr/local/etc/
+sudo cp /usr/local/share/mpd_oled/mpd_oled_fifo.conf /usr/local/etc/
 ```
 
-Patch the Moode source code. (Note 1:
-a Moode system update may overwrite the patched code, in which case, repeat
-the next instructions, and possibly also the previous instructions.
-Note 2: if, for any reason, regeneration of
-/etc/mpd.conf has been disabled (for example, if it has been set immutable)
-then edit the file directly and append the contents of mpd_oled_fifo.conf.)
+Patch the Moode source code.
 
-Run **just one** of the following three patch commands, depending on your
+Run **just one** of the following patch commands, depending on your
 Moode version.
 
-Patch Moode 7 (do not run this on Moode 6)
-```
-sudo patch -d/ -p0 -N < /usr/local/share/mpd_oled/moode/moode7_mpd_fifo.patch  # Patch Moode 7
-```
-
-Patch Moode 6.5 and later (do not run this on Moode 7)
+Patch Moode 6.5 and later
 ```
 sudo patch -d/ -p0 -N < /usr/local/share/mp_oled/moode6_mpd_fifo.patch  # Patch Moode 6.5 and later
 ```
@@ -145,34 +150,22 @@ Patch Moode 6.4 and earlier (may work on Moode 5, later versions)
 ```
 sudo patch -d/ -p0 -N < /usr/local/share/mp_oled/moode_old_mpd_fifo.patch  # Patch Moode 6.4 and earlier
 ```
-If you ever want to make any changes to the FIFO configuration,
-then modify /usr/local/etc/mpd_oled_fifo.conf and restart MPD,
-by going to the Moode UI Audio Config page and clicking on
-"RESTART" in the MPD section (for Moode 5, restart MPD now).
-
-Now, enable the Moode metadata file
-```
-sqlite3 /var/local/www/db/moode-sqlite3.db "update cfg_system set value=1 where param='extmeta'" && mpc add ""
-
-```
-Go to the Moode UI and set your timezone at **Moode / Configure / System**.
+(for Moode 5, restart MPD now by going to the Moode UI Audio Config page and
+clicking on "RESTART" in the MPD section).
 
 **Essential: reboot the machine**.
 
-## Test the display
+## Configure mpd_oled
 
-Check the program works correctly by running a test command and checking
-the display while the player is stopped, paused and playing music.
-
-The program can be tested without the audio copy enabled, in which
-case the spectrum analyser are will be blank.
+*Note: The program can be run without the audio copy enabled, in*
+*which case the spectrum analyser area will be blank*
 
 The OLED type MUST be specified with -o from the following list:
-    1 - Adafruit SPI 128x64,
-    3 - Adafruit I2C 128x64,
+    1 - Adafruit (SSD1306, SSD1309) SPI 128x64,
+    3 - Adafruit (SSD1306, SSD1309) I2C 128x64,
     4 - Seeed I2C 128x64,
-    6 - SH1106 I2C 128x64.
-    7 - SH1106 SPI 128x64.
+    6 - SH1106 (SSH1106) I2C 128x64.
+    7 - SH1106 (SSH1106) SPI 128x64.
 
 E.g. the command for a generic I2C SH1106 display (OLED type 6) with
 a display of 10 bars and a gap of 1 pixel between bars and a framerate
@@ -210,7 +203,7 @@ an mpd_oled service file so that mpd_oled will run at boot.
 Install a service file. This will not overwrite an existing mpd_oled
 service file.
 ```
-sudo mpd_oled_service_install.sh
+sudo mpd_oled_service_install
 ```
 
 Edit the service file to include your chosen options. Rerun
@@ -225,16 +218,18 @@ add your options (from a successful mpd_oled test command) on the line
 starting `ExecStart` and after `mpd_oled`.
 
 ```
-sudo mpd_oled_service_edit.sh     # edit mpd_oled options with editor
+sudo mpd_oled_service_edit     # edit mpd_oled options with editor
 ```
 
 Or, append all your options (from a successful mpd_oled test command)
 to the command and the service file will be updated to use these
 optiond for mpd_oled, e.g. the following will cause the service to
-run `mpd_oled -o 6 -b 10`
+run `mpd_oled -o 6 -b 10'
 ```
-sudo mpd_oled_service_edit.sh -o 6 -b 10
+sudo mpd_oled_service_edit -o 6 -b 10
 ```
+
+### Extra commands to control the service
 
 Commands from the following list can be run to control the service
 (they do not need to be run from the mpd_oled directory)
@@ -247,8 +242,7 @@ sudo systemctl status mpd_oled    # report the status of the service
 ```
 
 If you wish to uninstall the mpd_oled service (just the service,
-the command does not uninstall the mpd_oled or cava binaries)
+the command does not uninstall the mpd_oled or mpd_oled_cava binaries)
 ```
-sudo mpd_oled_service_uninstall.sh
+sudo mpd_oled_service_uninstall
 ```
-

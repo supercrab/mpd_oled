@@ -13,9 +13,13 @@ doc_DATA = README.md NEWS AUTHORS COPYING mpd_oled.jpg
 docdocdir = ${docdir}/doc
 docdoc_DATA = \
 	doc/FAQ.md \
-	doc/INSTALL_MOODE.md \
-	doc/INSTALL_RAUDIO.md \
-	doc/INSTALL_VOLUMIO.md \
+	doc/install_moode7_deb.md \
+	doc/install_moode6_deb.md \
+	doc/install_volumio2_deb.md \
+	doc/install_moode7_source.md \
+	doc/install_moode6_source.md \
+	doc/install_volumio2_source.md \
+	doc/install_raudio1_source.md \
 	doc/wiring_i2c.png \
 	doc/wiring_spi.png
 
@@ -30,11 +34,11 @@ moode_DATA = \
 	scripts/moode_mpd_fifo_old.patch
 
 bin_SCRIPTS = \
-	scripts/mpd_oled_service_install.sh \
-	scripts/mpd_oled_service_edit.sh \
-	scripts/mpd_oled_service_uninstall.sh \
-	scripts/mpd_oled_volumio_mpd_conf_install.sh \
-	scripts/mpd_oled_volumio_mpd_conf_uninstall.sh
+	scripts/mpd_oled_service_install \
+	scripts/mpd_oled_service_edit \
+	scripts/mpd_oled_service_uninstall \
+	scripts/mpd_oled_volumio_mpd_conf_install \
+	scripts/mpd_oled_volumio_mpd_conf_uninstall
 
 CLEANFILES = $(bin_SCRIPTS)
 
