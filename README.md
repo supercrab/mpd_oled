@@ -86,7 +86,7 @@ Example :
 mpd_oled -o 6 use a SH1106 I2C 128x64 OLED
 ```
 
-Please check the [FAQ](FAQ.md)
+Please check the [FAQ](doc/FAQ.md)
 
 ## Credits
 
