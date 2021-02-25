@@ -67,6 +67,7 @@ void signal_handler(int sig)
       cleanup();
       break;
   }
+  abort();
 }
 
 void init_signals(void)
