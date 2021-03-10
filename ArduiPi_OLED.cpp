@@ -557,6 +557,8 @@ void ArduiPi_OLED::begin( void )
   else if (oled_type == OLED_SH1106_I2C_128x64)
   {
     precharge = 0x1f;
+
+    // Set custom precharge period?
     if (preChargePeriod > -1){
        precharge = preChargePeriod;
     }
@@ -583,7 +585,7 @@ void ArduiPi_OLED::begin( void )
   }
   else
   {
-
+    // Set custom precharge period?
     if (preChargePeriod > -1){ 
       precharge = preChargePeriod;
     }
@@ -608,7 +610,7 @@ void ArduiPi_OLED::begin( void )
     sendCommand( SSD_Set_Page_Address, 0,   7 ); 
   }
 
-  // Custom brightness override
+  // set custom brightness?
   if (brightness > -1){
     contrast = brightness;
   }
