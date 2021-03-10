@@ -169,6 +169,7 @@ class ArduiPi_OLED : public Adafruit_GFX
   void clearDisplay(void);
   void setGrayLevel(uint8_t grayLevel);
   void setBrightness(uint8_t Brightness);
+  void setPreChargePeriod(uint8_t period);
   void invertDisplay(uint8_t i);
   void display();
   
@@ -198,6 +199,8 @@ class ArduiPi_OLED : public Adafruit_GFX
   uint8_t vcc_type;
   uint8_t oled_type;
   uint8_t grayH, grayL;
+  int16_t brightness;
+  int16_t preChargePeriod;
   
   inline boolean isI2C(void);
   inline boolean isSPI(void);

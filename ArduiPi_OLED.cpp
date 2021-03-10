@@ -243,6 +243,9 @@ ArduiPi_OLED::ArduiPi_OLED()
   
   // Empty pointer to OLED buffer
   poledbuff = NULL;
+
+  preChargePeriod = -1;
+  brightness = -1;
 }
 
 
@@ -553,6 +556,10 @@ void ArduiPi_OLED::begin( void )
   }
   else if (oled_type == OLED_SH1106_I2C_128x64)
   {
+    precharge = 0x1f;
+    if (preChargePeriod > -1){
+       precharge = preChargePeriod;
+    }
     sendCommand(SSD1306_Set_Lower_Column_Start_Address|0x02); /*set lower column address*/
     sendCommand(SSD1306_Set_Higher_Column_Start_Address);     /*set higher column address*/
     sendCommand(SSD1306_Set_Start_Line);                      /*set display start line*/
@@ -568,7 +575,7 @@ void ArduiPi_OLED::begin( void )
     sendCommand(SSD1306_Set_Display_Clock_Div);    /*set osc division*/
     sendCommand(0x80);
     sendCommand(SSD1306_Set_Precharge_Period);    /*set pre-charge period*/
-    sendCommand(0x1f);    /*0x22*/
+    sendCommand(precharge);    /*0x22*/
     sendCommand(SSD1306_Set_Com_Pins);    /*set COM pins*/
     sendCommand(0x12);
     sendCommand(SSD1306_Set_Vcomh_Deselect_Level);    /*set vcomh*/
@@ -576,6 +583,10 @@ void ArduiPi_OLED::begin( void )
   }
   else
   {
+
+    if (preChargePeriod > -1){ 
+      precharge = preChargePeriod;
+    }
     sendCommand(SSD1306_Charge_Pump_Setting, chargepump); 
     sendCommand(SSD1306_Set_Memory_Mode, 0x00);              // 0x20 0x0 act like ks0108
     sendCommand(SSD1306_Set_Display_Clock_Div, 0x80);      // 0xD5 + the suggested ratio 0x80
@@ -595,6 +606,11 @@ void ArduiPi_OLED::begin( void )
     // no reset pin available on OLED, 
     sendCommand( SSD_Set_Column_Address, 0, 127 ); 
     sendCommand( SSD_Set_Page_Address, 0,   7 ); 
+  }
+
+  // Custom brightness override
+  if (brightness > -1){
+    contrast = brightness;
   }
 
   sendCommand(SSD_Set_ContrastLevel, contrast);
@@ -664,10 +680,16 @@ void ArduiPi_OLED::putSeedString(const char *String)
     }
 }
 
+void ArduiPi_OLED::setPreChargePeriod(uint8_t period)
+{
+   preChargePeriod = period;
+}
+
 void ArduiPi_OLED::setBrightness(uint8_t Brightness)
 {
-   sendCommand(SSD_Set_ContrastLevel);
-   sendCommand(Brightness);
+   //sendCommand(SSD_Set_ContrastLevel);
+   //sendCommand(Brightness);
+   brightness = Brightness;
 }
 
 
