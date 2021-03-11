@@ -689,8 +689,8 @@ void ArduiPi_OLED::setPreChargePeriod(uint8_t period)
 
 void ArduiPi_OLED::setBrightness(uint8_t Brightness)
 {
-   //sendCommand(SSD_Set_ContrastLevel);
-   //sendCommand(Brightness);
+   sendCommand(SSD_Set_ContrastLevel);
+   sendCommand(Brightness);
    brightness = Brightness;
 }
 
