@@ -1,3 +1,4 @@
+
 /*
    Copyright (c) 2018, Adrian Rossiter
 
@@ -115,6 +116,7 @@ public:
   int source;
   int brightness;                 // Display brightness 1 - 255
   int precharge_period;           // Pre chrage period 1 - 34
+  int vcom_deselect;              // Vcom deselected level 0 - 7
 
   OledOpts(): ProgramOpts("mpd_oled", "0.01"),
       DEF_SCROLL_RATE(8.0),
@@ -137,6 +139,8 @@ public:
       spi_cs(OLED_SPI_CS0),
       brightness(-1),
       precharge_period(-1),
+      vcom_deselect(-1),
+
       // Default for source of status values depends on the player
       source(
 #ifdef VOLUMIO
@@ -198,8 +202,9 @@ void OledOpts::usage()
 "  -r <gpio>  I2C/SPI reset GPIO number, if needed (default: 25)\n"
 "  -D <gpio>  SPI DC GPIO number (default: 24)\n"
 "  -S <gpio>  SPI CS number (default: 0)\n"
-"  -t <num>   Screen brightness (0 - 255)\n"
+"  -t <num>   Screen contrast (0 - 255)\n"
 "  -e <num>   Precharge period (0 - 34)\n"
+"  -v <num>   Vcom deselected level (0 - 7)\n"
 "Example :\n"
 "%s -o 6 use a %s OLED\n"
 "\n",
@@ -217,7 +222,7 @@ void OledOpts::process_command_line(int argc, char **argv)
 
   handle_long_opts(argc, argv);
 
-  while ((c=getopt(argc, argv, ":ho:b:g:f:s:C:dP:c:RI:a:B:r:D:S:t:e:")) != -1) {
+  while ((c=getopt(argc, argv, ":ho:b:g:f:s:C:dP:c:RI:a:B:r:D:S:t:e:v:")) != -1) {
     if (common_opts(c, optopt))
       continue;
 
@@ -368,7 +373,7 @@ void OledOpts::process_command_line(int argc, char **argv)
     case 't':
       print_status_or_exit(read_int(optarg, &brightness), c);
       if (brightness < 0 || brightness > 255)
-        error("brightness should be between 0 and 255", c);
+        error("contrast should be between 0 and 255", c);
       break;
 
     case 'e':
@@ -377,6 +382,11 @@ void OledOpts::process_command_line(int argc, char **argv)
         error("precharge period should be between 0 and 34", c);
       break;
 
+    case 'v':
+      print_status_or_exit(read_int(optarg, &vcom_deselect), c);
+      if (vcom_deselect < 0 || vcom_deselect > 7)
+        error("vcom deselect level should be between 0 and 7", c);
+      break;
 
     default:
       error("unknown command line error");
@@ -601,7 +611,7 @@ int main(int argc, char **argv)
   // Set up the OLED doisplay
   if (!init_display(display, opts.oled, opts.i2c_addr, opts.i2c_bus,
                     opts.reset_gpio, opts.spi_dc_gpio, opts.spi_cs,
-                    opts.brightness, opts.precharge_period, opts.rotate180))
+                    opts.brightness, opts.precharge_period, opts.vcom_deselect, opts.rotate180))
     opts.error("could not initialise OLED");
 
   // Create a FIFO for cava to write its raw output to

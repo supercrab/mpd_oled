@@ -231,7 +231,8 @@ static void set_rotation(ArduiPi_OLED &display, bool upside_down)
 }
 
 bool init_display(ArduiPi_OLED &display, int oled, unsigned char i2c_addr,
-    int i2c_bus, int reset_gpio, int spi_dc_gpio, int spi_cs, int brightness, int precharge_period, bool rotate180)
+    int i2c_bus, int reset_gpio, int spi_dc_gpio, int spi_cs, 
+    int brightness, int precharge_period, int vcom_deselect, bool rotate180)
 {
   if (display.oled_is_spi_proto(oled)) {
     // SPI change parameters to fit to your LCD
@@ -253,6 +254,11 @@ bool init_display(ArduiPi_OLED &display, int oled, unsigned char i2c_addr,
   // Set precharge period
   if (precharge_period > -1){
     display.setPreChargePeriod(precharge_period);
+  }
+
+  // Set vcom deselect level
+  if (vcom_deselect > -1){
+    display.setVcomDeselectedLevel(vcom_deselect);
   }
 
   display.begin();

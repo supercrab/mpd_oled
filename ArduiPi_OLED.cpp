@@ -246,6 +246,7 @@ ArduiPi_OLED::ArduiPi_OLED()
 
   preChargePeriod = -1;
   brightness = -1;
+  vcomDeselectedLevel = -1;
 }
 
 
@@ -442,7 +443,8 @@ void ArduiPi_OLED::begin( void )
   uint8_t compins;
   uint8_t contrast;
   uint8_t precharge;
-  
+  uint8_t vcom = 0x40; 
+ 
   reset(oled_width, oled_height);
 
   // Setup reset pin direction (used by both SPI and I2C)  
@@ -562,6 +564,11 @@ void ArduiPi_OLED::begin( void )
     if (preChargePeriod > -1){
        precharge = preChargePeriod;
     }
+    // Set custom vcom deselect level
+    if (vcomDeselectedLevel > -1){
+      vcom = vcomDeselectedLevel;
+    }
+
     sendCommand(SSD1306_Set_Lower_Column_Start_Address|0x02); /*set lower column address*/
     sendCommand(SSD1306_Set_Higher_Column_Start_Address);     /*set higher column address*/
     sendCommand(SSD1306_Set_Start_Line);                      /*set display start line*/
@@ -581,13 +588,17 @@ void ArduiPi_OLED::begin( void )
     sendCommand(SSD1306_Set_Com_Pins);    /*set COM pins*/
     sendCommand(0x12);
     sendCommand(SSD1306_Set_Vcomh_Deselect_Level);    /*set vcomh*/
-    sendCommand(0x40);
+    sendCommand(vcom);
   }
   else
   {
     // Set custom precharge period?
     if (preChargePeriod > -1){ 
       precharge = preChargePeriod;
+    }
+    // Set custom vcom deselect level
+    if (vcomDeselectedLevel > - 1){
+       vcom = vcomDeselectedLevel;
     }
     sendCommand(SSD1306_Charge_Pump_Setting, chargepump); 
     sendCommand(SSD1306_Set_Memory_Mode, 0x00);              // 0x20 0x0 act like ks0108
@@ -600,7 +611,7 @@ void ArduiPi_OLED::begin( void )
     
     sendCommand(SSD1306_Set_Com_Pins, compins);  
     sendCommand(SSD1306_Set_Precharge_Period, precharge); 
-    sendCommand(SSD1306_Set_Vcomh_Deselect_Level, 0x40); // 0x40 -> unknown value in datasheet
+    sendCommand(SSD1306_Set_Vcomh_Deselect_Level, vcom); // 0x40 -> unknown value in datasheet
     sendCommand(SSD1306_Entire_Display_Resume);    
     sendCommand(SSD1306_Normal_Display);         // 0xA6
 
@@ -682,16 +693,21 @@ void ArduiPi_OLED::putSeedString(const char *String)
     }
 }
 
-void ArduiPi_OLED::setPreChargePeriod(uint8_t period)
+void ArduiPi_OLED::setVcomDeselectedLevel(uint8_t value)
 {
-   preChargePeriod = period;
+   vcomDeselectedLevel = value;
 }
 
-void ArduiPi_OLED::setBrightness(uint8_t Brightness)
+void ArduiPi_OLED::setPreChargePeriod(uint8_t value)
+{
+   preChargePeriod = value;
+}
+
+void ArduiPi_OLED::setBrightness(uint8_t value)
 {
    sendCommand(SSD_Set_ContrastLevel);
-   sendCommand(Brightness);
-   brightness = Brightness;
+   sendCommand(value);
+   brightness = value;
 }
 
 
